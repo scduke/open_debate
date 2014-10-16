@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.contrib.auth.models import User
 
 #These constants map the events to a two letter abbreviation
 
@@ -35,32 +35,36 @@ EVENT_CHOICES = (
     (PUBLIC_FORUM, 'PF') )
 
 
-# Create your models here.
-
-class Person(models.Model):
-
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
-    events = models.CharField(max_length=2, choices=EVENT_CHOICES)
-
-
 class School(models.Model):
     """
     Model representation of a school. Maps a one-to-many relationship with
     students, coaches, and judges.
     """
+    ONE_A = '1A'
+    TWO_A = '2A'
+    THREE_A = '3A'
+    FOUR_A = '4A'
+    FIVE_A = '5A'
+    SIX_A = '6A'
+    SCHOOL_CLASS_CHOICES = (
+        (ONE_A, '1A'),
+        (TWO_A, '2A'),
+        (THREE_A, '3A'),
+        (FOUR_A, '4A'),
+        (FIVE_A, '5A'),
+        (SIX_A, '6A') )
+
+    name = models.CharField(max_length=50)
+    competition_class = models.CharField(max_length=2, choices=SCHOOL_CLASS_CHOICES)
     registration_date = models.DateTimeField()
+    coach = models.ForeignKey(Coach)
 
 
 class Student(models.Model):
     """
     Model representation of a student/competitor in the tournament.
     """
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
-    school = models.ForeignKey(School)
-    registration_date = models.DateTimeField()
-
+    #constants that record the possible grade levels
     FRESHMAN = 'FR'
     SOPHOMORE = 'SO'
     JUNIOR = 'JR'
@@ -69,28 +73,42 @@ class Student(models.Model):
         (FRESHMAN, 'Freshman'),
         (SOPHOMORE, 'Sophomore'),
         (JUNIOR, 'Junior'),
-        (SENIOR, 'Senior'),
-    )
-    year_in_school = models.CharField(max_length=2, choices=YEAR_IN_SCHOOL_CHOICES, default=FRESHMAN)
+        (SENIOR, 'Senior') )
 
-    def is_upperclass(self):
-        return self.year_in_school in (self.JUNIOR, self.SENIOR)
+    user = models.OneToOneField(User)   #associates user with a student
+    first_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30)
+    school = models.ForeignKey(School)
+    registration_date = models.DateTimeField()
+    year_in_school = models.CharField(max_length=2, choices=YEAR_IN_SCHOOL_CHOICES)
+    events = models.CharField(max_length=2, choices=EVENT_CHOICES)
+
+    def is_underclassman(self):
+        return self.year_in_school in (self.FRESHMAN, self.SOPHOMORE)
+
 
 class Coach(models.Model):
     """
     Model representation of a coach.
     """
+    user = models.OneToOneField(User)       #maps user to a Coach
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     school = models.ForeignKey(School)
     registration_date = models.DateTimeField()
+    tournament_director = models.BooleanField(default=False)
+
 
 class Building(models.Model):
     """
     Representation of the tournament venue. Maintains a one-to-many relationship with
     room objects.
     """
-    school = models.ForeignKey(School)
+    school = models.OneToOneField(School)
+    street_address = models.CharField(max_length=40)
+    city = models.CharField(max_length=30)
+    state = models.CharField()
+    zip_code = models.CharField(max_length=15)
     rooms = models.ForeignKey(Room)
 
 
@@ -101,6 +119,7 @@ class Room(models.Model):
     """
     school = models.OneToOneField(School)
     capacity = models.IntegerField()
+    designation = models.CharField(max_length=50)   #meant to record room numbers/letters
 
 
 class Judge(models.Model):
@@ -109,3 +128,5 @@ class Judge(models.Model):
     """
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
+    coach = models.OneToOneField(Coach)        #maps the Judge to a coach if they're the same person
+    events = models.CharField(max_length=2, choices=EVENT_CHOICES)
