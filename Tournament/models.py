@@ -35,6 +35,16 @@ EVENT_CHOICES = (
     (PUBLIC_FORUM, 'PF') )
 
 
+class Tournament(models.Model):
+    """
+    Stores the metadata about the tournament, including location, dates, schools attending, and more.
+    """
+    name = models.CharField(max_length=50)
+    school = models.ForeignKey(School)
+    tournament_director = models.ForeignKey(Coach)
+    building = models.ForeignKey(Building)
+
+
 class School(models.Model):
     """
     Model representation of a school. Maps a one-to-many relationship with
@@ -75,7 +85,7 @@ class Student(models.Model):
         (JUNIOR, 'Junior'),
         (SENIOR, 'Senior') )
 
-    user = models.OneToOneField(User)   #associates user with a student
+    user = models.OneToOneField(User, editable=False)   #associates user with a student
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     school = models.ForeignKey(School)
@@ -86,17 +96,35 @@ class Student(models.Model):
     def is_underclassman(self):
         return self.year_in_school in (self.FRESHMAN, self.SOPHOMORE)
 
+    def __unicode__(self):
+        return (self.first_name, self.last_name, self.school, self.events)
 
 class Coach(models.Model):
     """
     Model representation of a coach.
     """
-    user = models.OneToOneField(User)       #maps user to a Coach
+    user = models.OneToOneField(User, editable=False)       #maps user to a Coach
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     school = models.ForeignKey(School)
     registration_date = models.DateTimeField()
     tournament_director = models.BooleanField(default=False)
+
+    def __unicode__(self):
+        return (self.first_name, self.last_name, self.school)
+
+class Judge(models.Model):
+    """
+    Model representation of a Judge.
+    """
+    user = models.OneToOneField(User, editable=False)       #maps user to a Judge
+    first_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30)
+    coach = models.OneToOneField(Coach)        #maps the Judge to a coach if they're the same person
+    events = models.CharField(max_length=2, choices=EVENT_CHOICES)
+
+    def __unicode__(self):
+        return (self.first_name, self.last_name, self.events)
 
 
 class Building(models.Model):
@@ -109,7 +137,9 @@ class Building(models.Model):
     city = models.CharField(max_length=30)
     state = models.CharField()
     zip_code = models.CharField(max_length=15)
-    rooms = models.ForeignKey(Room)
+
+    def __unicode__(self):
+        return (self.school, self.city)
 
 
 class Room(models.Model):
@@ -117,16 +147,26 @@ class Room(models.Model):
     Representation of individual rooms at a tournament venue. Maintains a many-to-one relationship
     with Building objects.
     """
-    school = models.OneToOneField(School)
+    school = models.ForeignKey(School)
     capacity = models.IntegerField()
     designation = models.CharField(max_length=50)   #meant to record room numbers/letters
 
+    def __unicode__(self):
+        return (self.school, self.designation, self.capacity)
 
-class Judge(models.Model):
+class Round(models.Model):
     """
-    Model representation of a Judge.
+    Representation of a round of events that contains section objects.
     """
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
-    coach = models.OneToOneField(Coach)        #maps the Judge to a coach if they're the same person
-    events = models.CharField(max_length=2, choices=EVENT_CHOICES)
+    event = models.CharField(max_length=2, choices=EVENT_CHOICES)
+    time = models.DateTimeField()
+    sections = models.ManyToManyField(Section)
+
+class Section(models.Model):
+    """
+    Keeps track of individual sections contained within a round.
+    """
+    room = models.ManyToManyField(Room)
+
+
+
