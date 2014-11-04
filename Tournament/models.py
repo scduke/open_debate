@@ -42,10 +42,10 @@ class Tournament(models.Model):
     name = models.CharField(max_length=50)
     school = models.ForeignKey('School')
     tournament_director = models.ForeignKey('Coach')
-    building = models.ForeignKey('Building')
+    building = models.ForeignKey('Building', blank=True, null=True)
 
     def __unicode__(self):
-        return (self.name, self.school)
+        return self.name + self.school.__unicode__()
 
 
 class School(models.Model):
@@ -70,7 +70,6 @@ class School(models.Model):
     name = models.CharField(max_length=50)
     competition_class = models.CharField(max_length=2, choices=SCHOOL_CLASS_CHOICES)
     registration_date = models.DateTimeField()
-    coach = models.ForeignKey('Coach')
 
     def __unicode__(self):
         return self.name
@@ -80,14 +79,15 @@ class Coach(models.Model):
     """
     Model representation of a coach.
     """
-    user = models.OneToOneField(User, editable=False)       #maps user to a Coach
+    user = models.OneToOneField(User, blank=True, null=True)       #maps user to a Coach
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     registration_date = models.DateTimeField()
     tournament_director = models.BooleanField(default=False)
+    school = models.ForeignKey(School, null=True)
 
     def __unicode__(self):
-        return (self.first_name, self.last_name, self.school)
+        return self.first_name + self.last_name + " - " + self.school.__unicode__()
 
 
 class Student(models.Model):
@@ -105,7 +105,7 @@ class Student(models.Model):
         (JUNIOR, 'Junior'),
         (SENIOR, 'Senior') )
 
-    user = models.OneToOneField(User, editable=False)   #associates user with a student
+    user = models.OneToOneField(User, blank=True, null=True, unique=True)   #associates user with a student
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     school = models.ForeignKey(School)
@@ -117,22 +117,22 @@ class Student(models.Model):
         return self.year_in_school in (self.FRESHMAN, self.SOPHOMORE)
 
     def __unicode__(self):
-        return (self.first_name, self.last_name, self.school, self.events)
-
+        return self.first_name + " " + self.last_name + " - " + self.school.__unicode__()
 
 
 class Judge(models.Model):
     """
     Model representation of a Judge.
     """
-    user = models.OneToOneField(User, editable=False)       #maps user to a Judge
+    user = models.OneToOneField(User, blank=True, null=True)       #maps user to a Judge
+    school = models.ManyToManyField(School)
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     coach = models.OneToOneField(Coach)        #maps the Judge to a coach if they're the same person
     events = models.CharField(max_length=2, choices=EVENT_CHOICES)
 
     def __unicode__(self):
-        return (self.first_name, self.last_name, self.events)
+        return self.first_name + self.last_name
 
 
 class Building(models.Model):
@@ -147,7 +147,7 @@ class Building(models.Model):
     zip_code = models.CharField(max_length=15)
 
     def __unicode__(self):
-        return (self.school, self.city)
+        return self.school.__unicode__() + "-" + self.city
 
 
 class Room(models.Model):
@@ -160,7 +160,8 @@ class Room(models.Model):
     designation = models.CharField(max_length=50)   #meant to record room numbers/letters
 
     def __unicode__(self):
-        return (self.school, self.designation, self.capacity)
+        return self.designation
+
 
 class Round(models.Model):
     """
