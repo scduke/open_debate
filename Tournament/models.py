@@ -40,9 +40,12 @@ class Tournament(models.Model):
     Stores the metadata about the tournament, including location, dates, schools attending, and more.
     """
     name = models.CharField(max_length=50)
-    school = models.ForeignKey(School)
-    tournament_director = models.ForeignKey(Coach)
-    building = models.ForeignKey(Building)
+    school = models.ForeignKey('School')
+    tournament_director = models.ForeignKey('Coach')
+    building = models.ForeignKey('Building')
+
+    def __unicode__(self):
+        return (self.name, self.school)
 
 
 class School(models.Model):
@@ -67,7 +70,24 @@ class School(models.Model):
     name = models.CharField(max_length=50)
     competition_class = models.CharField(max_length=2, choices=SCHOOL_CLASS_CHOICES)
     registration_date = models.DateTimeField()
-    coach = models.ForeignKey(Coach)
+    coach = models.ForeignKey('Coach')
+
+    def __unicode__(self):
+        return self.name
+
+
+class Coach(models.Model):
+    """
+    Model representation of a coach.
+    """
+    user = models.OneToOneField(User, editable=False)       #maps user to a Coach
+    first_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30)
+    registration_date = models.DateTimeField()
+    tournament_director = models.BooleanField(default=False)
+
+    def __unicode__(self):
+        return (self.first_name, self.last_name, self.school)
 
 
 class Student(models.Model):
@@ -99,19 +119,7 @@ class Student(models.Model):
     def __unicode__(self):
         return (self.first_name, self.last_name, self.school, self.events)
 
-class Coach(models.Model):
-    """
-    Model representation of a coach.
-    """
-    user = models.OneToOneField(User, editable=False)       #maps user to a Coach
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
-    school = models.ForeignKey(School)
-    registration_date = models.DateTimeField()
-    tournament_director = models.BooleanField(default=False)
 
-    def __unicode__(self):
-        return (self.first_name, self.last_name, self.school)
 
 class Judge(models.Model):
     """
@@ -135,7 +143,7 @@ class Building(models.Model):
     school = models.OneToOneField(School)
     street_address = models.CharField(max_length=40)
     city = models.CharField(max_length=30)
-    state = models.CharField()
+    state = models.CharField(max_length=19)
     zip_code = models.CharField(max_length=15)
 
     def __unicode__(self):
@@ -160,13 +168,19 @@ class Round(models.Model):
     """
     event = models.CharField(max_length=2, choices=EVENT_CHOICES)
     time = models.DateTimeField()
-    sections = models.ManyToManyField(Section)
+
 
 class Section(models.Model):
     """
     Keeps track of individual sections contained within a round.
     """
     room = models.ManyToManyField(Room)
+    students = models.ManyToManyField(Student)
+    judge = models.ManyToManyField(Judge)
+    round = models.ForeignKey(Round)
+
+
+
 
 
 
